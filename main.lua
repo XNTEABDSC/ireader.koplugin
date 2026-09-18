@@ -252,7 +252,9 @@ end
 local MENU_KEY = "ireader_adaptation"
 
 local function frontlight_enabled()
-    return G_reader_settings:nilOrTrue("ireader_frontlight")
+    -- Dormant feature: the frontlight needs root on the tested device, so it is
+    -- off unless explicitly enabled with `ireader_frontlight = true`.
+    return G_reader_settings:isTrue("ireader_frontlight")
 end
 
 local function ripple_enabled()
@@ -268,10 +270,11 @@ local function ripple_speed()
 end
 
 local function set_ripple_speed(speed)
-    if speed == "standard" then
-        G_reader_settings:delSetting("ireader_ripple_speed")
-    else
-        G_reader_settings:saveSetting("ireader_ripple_speed", speed)
+    -- Save explicitly AND flush: KOReader only writes settings.reader.lua at its
+    -- own flush points, which is why the speed appeared to reset on restart.
+    G_reader_settings:saveSetting("ireader_ripple_speed", speed)
+    if G_reader_settings.flush then
+        G_reader_settings:flush()
     end
 end
 
@@ -977,15 +980,19 @@ build_menu_item = function()
                 checked_func = function()
                     return ripple_enabled()
                 end,
-                -- No probing here: opening a menu must not run JNI.
-                enabled_func = function()
-                    return not epdc.is_poisoned()
-                end,
-                help_text = epdc.is_poisoned()
-                    and _("Disabled: the plugin does not touch EPDC any more.")
-                    or _("Ripple page-turn animation: arms the native SmartOS water-ripple effect through the vendor EPDC interface, right before each page-turn frame is posted.\n\nThe animation speed is the one built into the firmware. The vendor interface is detected on the first page turn."),
+                help_text = _("Ripple page-turn animation: arms the native SmartOS water-ripple effect through the vendor EPDC interface, right before each page-turn frame is posted.\n\nThe animation speed is the one built into the firmware. The vendor interface is detected on the first page turn."),
                 callback = function(touchmenu_instance)
-                    G_reader_settings:flipNilOrFalse("ireader_ripple")
+                    -- Real toggle: save the new value, flush it to disk, re-arm.
+                    local enable = not ripple_enabled()
+                    G_reader_settings:saveSetting("ireader_ripple", enable)
+                    if G_reader_settings.flush then
+                        G_reader_settings:flush()
+                    end
+                    if enable and epdc.is_poisoned() then
+                        -- Turning it on also clears a crash-disable left over
+                        -- from an older session.
+                        epdc.reset()
+                    end
                     local plugin = IReader.instance
                     if plugin then
                         plugin:sync_ripple()
@@ -995,10 +1002,7 @@ build_menu_item = function()
             },
             {
                 text = _("Page-turn animation speed"),
-                enabled_func = function()
-                    return ripple_enabled() and not epdc.is_poisoned()
-                end,
-                help_text = _("Speed of the native water-ripple page-turn animation. The ramp itself comes from the firmware; this only selects the speed flag."),
+                help_text = _("Speed of the native water-ripple page-turn animation. The ramp itself comes from the firmware; this only selects the speed flag. The choice is saved immediately."),
                 sub_item_table = {
                     {
                         text = _("Slow"),
@@ -1034,12 +1038,6 @@ build_menu_item = function()
                         end,
                     },
                 },
-            },
-            {
-                text = _("Other"),
-                sub_item_table_func = function()
-                    return guard_menu_items(build_diagnostics_items())
-                end,
             },
         },
     })

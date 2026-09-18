@@ -10,5 +10,5 @@ Hardware adaptation for 掌阅 (iReader) e-ink devices running SmartOS 4.x:
 * Frontlight control through the device's own LED/sysfs interface.
 * Native SmartOS "water ripple" page-turn animation (EPDC).
 ]]),
-    version = "0.5.0",
+    version = "0.6.0",
 }
