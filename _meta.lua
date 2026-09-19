@@ -5,10 +5,10 @@ return {
     name = "ireader",
     fullname = _("iReader adaptation"),
     description = _([[
-Hardware adaptation for 掌阅 (iReader) e-ink devices running SmartOS 4.x:
+Native SmartOS "water ripple" page-turn animation for 掌阅 (iReader) e-ink
+devices running SmartOS 4.x.
 
-* Frontlight control through the device's own LED/sysfs interface.
-* Native SmartOS "water ripple" page-turn animation (EPDC).
+(Frontlight support is dormant: it would require root on the tested device.)
 ]]),
-    version = "0.6.0",
+    version = "0.7.0",
 }

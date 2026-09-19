@@ -83,10 +83,17 @@ M.config = {
     -- Force the next post into page-turn mode.
     use_force_mode = true,
     force_mode = 0x01000063,
-    -- Direction code per rotation mode (0=portrait, 1=landscape,
-    -- 2=reverse portrait, 3=reverse landscape).
-    directions_forward = { 1, 4, 2, 3 },
-    directions_backward = { 2, 3, 1, 4 },
+    -- Direction code per rotation mode, indexed by KOReader's rotation mode
+    -- (which matches the Android Surface rotation on this device):
+    --   0 = PORTRAIT, 1 = LANDSCAPE, 2 = REVERSE_PORTRAIT, 3 = REVERSE_LANDSCAPE
+    --
+    -- The community reference tables (legadoM-Ink) give { 1, 4, 2, 3 } / { 2, 3, 1, 4 },
+    -- but on iReader Air3 Pro that sweeps the wrong way in BOTH landscape
+    -- rotations (verified on device): portrait was correct, landscape mirrored.
+    -- Hence the two landscape entries are swapped here.  If another model turns
+    -- out mirrored, swap the entries for modes 1 and 3 (and/or 0 and 2).
+    directions_forward = { 1, 3, 2, 4 },
+    directions_backward = { 2, 4, 1, 3 },
     -- Speed flags OR'ed into the direction code.
     speed_flags = { slow = 128, standard = 64, fast = 0 },
     -- Discovery hints (lowercase substrings, matched against method names).
